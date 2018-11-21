@@ -1,0 +1,26 @@
+---
+title: "p8105_hw6_tm2680"
+author: "Tatini Mal-Sarkar"
+date: "11/21/2018"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(modelr)
+library(ggridges)
+```
+
+```{r balt_clean}
+hom_url = "https://raw.githubusercontent.com/washingtonpost/data-homicides/master/homicide-data.csv"
+
+balt_df = 
+  read_csv(hom_url) %>% 
+  filter(city == "Baltimore") %>% 
+  mutate(resolved = as.numeric(disposition == "Closed by arrest"),
+         victim_age = as.numeric(victim_age),
+         victim_race = fct_relevel(victim_race, "White")) %>% 
+  select(resolved, victim_age, victim_race, victim_sex)
+```
+
