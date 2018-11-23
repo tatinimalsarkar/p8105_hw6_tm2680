@@ -5,7 +5,6 @@ date: "11/21/2018"
 output: github_document
 ---
 
-# Problem 1
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
@@ -14,8 +13,10 @@ library(ggridges)
 library(purrr)
 library(rvest)
 library(dplyr)
+library(mgcv)
 ```
 
+# Problem 1
 ```{r hom_clean}
 hom_url = "https://raw.githubusercontent.com/washingtonpost/data-homicides/master/homicide-data.csv"
 
@@ -84,3 +85,13 @@ hom_df_glm %>%
 ```
 
 This plot depicts the odds ratio of solving a homicide for a non-white victim compared to a white victim. In cities like Boston, the odds of solving a murder for a non-white victim is 0.118 times the odds of solving a murder for a white victim. We're 95% confident the true value for this OR would lie between 0.049 and 0.285. Because this range doesn't include the null OR value of 1, resolving a homicide and victim race are significantly associated. In other words, in a city like Boston, white victims are likelier to have their case solved. The reverse might hold true in a city like Tampa, where the estimated OR is 1.159. However, because the 95% confidence interval ranges from 0.587 to 2.288, race and resolving a homicide might not be associated. 
+
+# Problem 2
+```{r bw_clean}
+bw_df = read_csv("./data/birthweight.csv") %>% 
+  janitor::clean_names() %>% 
+  mutate(babysex = as.factor(babysex),
+         frace = as.factor(frace),
+         mrace = as.factor(mrace)) 
+```
+
