@@ -96,40 +96,36 @@ bw_df = read_csv("./data/birthweight.csv") %>%
          missing = sum(is.na(babysex:wtgain)))
 ```
 
-To build this model, I first narrowed my focus to examining social factors that may influence child birthweight, specifically socioeconomic status and race. To that end, my predictor variables include `fincome` and `mrace`. I recoded `mrace` to white (0) and non-white (1). I hypothesized that higher family income and a white mother lead to higher baby weight.
+To build this model, I first narrowed my focus to maternal factors that might influence child birthweight, including pre-pregnancy weight (`ppwt`) and maternal height (`mheight`). I hypothesized that as maternal height and weight increased, so too would the child's weight.
 
 First, I tried  linear models including each predictor variable individually. 
 
 ```{r bw_model_select}
-bw_df_mod = bw_df %>% 
-  mutate(mrace = as.numeric(mrace != "White"))
-  
-# Fit of mother's race alone
-fit_mrace = lm(bwt ~ mrace, data = bw_df_mod)
+# Fit of mother's height alone
+fit_mrace = lm(bwt ~ mheight, data = bw_df)
 summary(fit_mrace)
 
-# Fit of family income alone
-fit_fincome = lm(bwt ~ fincome, data = bw_df_mod)
+# Fit of mother's weight alone
+fit_fincome = lm(bwt ~ ppwt, data = bw_df)
 summary(fit_fincome)
 ```
 
-Then, I tested whether adding maternal race to family income as predictors made a difference, using ANOVA. 
-```{r}
-# ANOVA of adding maternal race to family income
-fit_null_1 = lm(bwt ~ fincome, data = bw_df_mod)
-fit_alt_1 = lm(bwt ~ fincome + mrace, data = bw_df_mod)
+Both seemed important, so I tested whether adding maternal race to family income as predictors made a difference, using ANOVA. 
+```{r bw_model_add}
+fit_null = lm(bwt ~ ppwt, data = bw_df)
+fit_alt = lm(bwt ~ ppwt + mheight, data = bw_df)
 
-anova(fit_null_1, fit_alt_1) %>% 
-  broom::tidy()
+anova(fit_null, fit_alt) %>% 
+  broom::tidy() %>% 
+  knitr::kable(digit = 3)
 ```
 
-Finally, I tested whether adding family income to maternal race as predictors made a difference, using ANOVA once again.
-```{r}
-# ANOVA of adding family income to maternal race
-fit_null_2 = lm(bwt ~ mrace, data = bw_df_mod)
-fit_alt_2 = lm(bwt ~ mrace + fincome, data = bw_df_mod)
-
-anova(fit_null_2, fit_alt_2) %>% 
-  broom::tidy()
+The combination seemed useful. Finally, I wanted to see if maternal smoking modified the effect of maternal height and pre-pregnancy weight.
+```{r bw_model_eff}
+bw_df %>% 
+  lm(bwt ~ ppwt * smoken + mheight * smoken, data = .) %>% 
+  broom::tidy() %>% 
+  knitr::kable(digits = 3)
 ```
 
+Smoking doesn't seem to add anything to our model, so my final model included `ppwt` and `mheight`. But I wanted to check whether a linear model would make the most sense. 
