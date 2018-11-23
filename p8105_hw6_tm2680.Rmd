@@ -72,7 +72,15 @@ hom_df_glm = hom_df %>%
 ```
 
 ```{r hom_glm_plot}
-hom_df_glm 
-  
+hom_df_glm %>% 
+  mutate(city_state = forcats::fct_reorder(city_state, OR)) %>% 
+  ggplot(aes(x = city_state, y = OR)) + 
+  geom_bar(stat = "identity") + 
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), width = 0.2) + 
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title = "Solving homicides for non-white vs. white victims",
+         x = "City",
+         y = "OR")
 ```
 
+This plot depicts the odds ratio of solving a homicide for a non-white victim compared to a white victim. In cities like Boston, the odds of solving a murder for a non-white victim is 0.118 times the odds of solving a murder for a white victim. We're 95% confident the true value for this OR would lie between 0.049 and 0.285. Because this range doesn't include the null OR value of 1, resolving a homicide and victim race are significantly associated. In other words, in a city like Boston, white victims are likelier to have their case solved. The reverse might hold true in a city like Tampa, where the estimated OR is 1.159. However, because the 95% confidence interval ranges from 0.587 to 2.288, race and resolving a homicide might not be associated. 
