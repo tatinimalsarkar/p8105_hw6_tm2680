@@ -11,6 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(modelr)
 library(ggridges)
+library(purrr)
+library(rvest)
+library(dplyr)
 ```
 
 ```{r hom_clean}
@@ -22,12 +25,13 @@ hom_df =
   mutate(resolved = as.numeric(disposition == "Closed by arrest"),
          victim_age = as.numeric(victim_age),
          city_state = str_c(city, ", ", state),
-         victim_race = as.numeric(victim_race != "White")) %>% 
-  filter(city_state != "Dallas, TX" | city_state != "Phoenix, AZ" | city_state != "Kansas City, MO" | city_state != "Tulsa, AL") %>% 
+         victim_race = as.numeric(victim_race != "White"),
+         victim_sex = as.numeric(victim_sex == "Male")) %>% 
+  filter(city_state != "Dallas, TX" & city_state != "Phoenix, AZ" & city_state != "Kansas City, MO" & city_state != "Tulsa, AL") %>% 
   select(city_state, resolved, victim_age, victim_race, victim_sex)
 ```
 
-```{r hom_balt_gm}
+```{r hom_balt_glm}
 hom_balt_df = 
   hom_df %>% 
   filter(city_state == "Baltimore, MD")
@@ -45,3 +49,30 @@ fit_log %>%
 ```
 
 The adjusted odds ratio for solving homicides comparing non-white to white victims, keeping all other variables fixed, is 0.4406. We are 95% confident the true value for this OR lies between 0.3129 and 0.6204.
+
+```{r glm_func}
+glm_func = function(df) {
+  log = glm(resolved ~ victim_age + victim_sex + victim_race, data = df, family = binomial())
+  
+  broom::tidy(log) %>% 
+    mutate(OR = exp(estimate),
+         lower_bound = exp(estimate - 1.96*std.error),
+         upper_bound = exp(estimate + 1.96*std.error)) %>% 
+    filter(term == "victim_race") %>% 
+    select(OR, lower_bound, upper_bound)
+}
+```
+
+```{r hom_glm}
+hom_df_glm = hom_df %>% 
+  nest(resolved, victim_age, victim_sex, victim_race) %>% 
+  mutate(models = map(data, glm_func)) %>% 
+  unnest(models) %>% 
+  select(-data)
+```
+
+```{r hom_glm_plot}
+hom_df_glm 
+  
+```
+
