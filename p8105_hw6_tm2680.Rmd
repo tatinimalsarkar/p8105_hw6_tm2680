@@ -111,6 +111,7 @@ summary(fit_ppwt)
 ```
 
 Both seemed important, so I tested whether adding maternal race to family income as predictors made a difference, using ANOVA. 
+
 ```{r bw_model_add}
 fit_null = lm(bwt ~ ppwt, data = bw_df)
 fit_alt = lm(bwt ~ ppwt + mheight, data = bw_df)
@@ -125,7 +126,8 @@ bw_df %>%
   knitr::kable(digits = 3)
 ```
 
-The combination seemed useful. Finally, I wanted to see if maternal smoking modified the effect of maternal height and pre-pregnancy weight.
+The combination seemed useful. Then, I wanted to see if maternal smoking modified the effect of maternal height and pre-pregnancy weight.
+
 ```{r bw_model_smoke}
 bw_df %>% 
   lm(bwt ~ ppwt * smoken + mheight * smoken, data = .) %>% 
@@ -133,7 +135,17 @@ bw_df %>%
   knitr::kable(digits = 3)
 ```
 
-Smoking didn't seem to add anything to our model, so my final model included `ppwt` and `mheight`, where both predictors achieve significance at an alpha of 0.05. 
+Smoking didn't seem to add anything to our model. Finally, I wanted to test if the interaction of `ppwt` and `mheight` would make a difference. 
+
+```{r bw_model_interact}
+bw_df %>% 
+  lm(bwt ~ ppwt + mheight + ppwt*mheight, data = .) %>% 
+  broom::tidy() %>% 
+  knitr::kable(digits = 3)
+```
+
+However, the interaction term was not significant at an alpha of 0.05, so my final model included `ppwt` and `mheight`. As shown above, both predictors achieve significance in a linear model at an alpha of 0.05. 
+
 ```{r bw_model}
 bw_fit = lm(bwt ~ ppwt + mheight, data = bw_df) 
 
@@ -149,11 +161,24 @@ bw_df %>%
 
 
 ```{r bw_model_compare}
-set.seed(1)
-bw_train_df = sample_n(bw_df, 3473)
-bw_test_df = anti_join(bw_df, bw_train_df)
+cv_df = crossv_mc(bw_df, 100)
 
-lin_mod = lm(bwt ~ ppwt + mheight, data = bw_train_df)
+cv_df = cv_df %>% 
+  mutate(bw_fit_orig = map(train, ~lm(bwt ~ ppwt + mheight, data = .x)),
+         compare_1 = map(train, ~lm(bwt ~ blength + gaweeks, data = .x)),
+         compare_2 = map(train, ~lm(bwt ~ bhead + blength + babysex + bhead*blength + bhead*babysex + blength*babysex + bhead*blength*babysex, data = .x))) %>% 
+  mutate(rmse_bw = map2_dbl(bw_fit_orig, test, ~rmse(model = .x, data = .y)),
+         rmse_1 = map2_dbl(compare_1, test, ~rmse(model = .x, data = .y)),
+         rmse_2 = map2_dbl(compare_2, test, ~rmse(model = .x, data = .y)))
 
+cv_df %>% 
+  select(starts_with("rmse")) %>% 
+  gather(key = model, value = rmse) %>% 
+  mutate(model = str_replace(model, "rmse_", ""),
+         model = fct_inorder(model)) %>% 
+  ggplot(aes(x = model, y = rmse)) +
+  geom_violin() + 
+  labs(title = "RMSE by model")
 ```
 
+The best model appears to be the model that includes head circumference, length, sex, and all interactions, as it has the lowest RMSE value. The RMSE value for my proposed model has the highest RMSE by far, indicating that it is not at all an optimal model.
