@@ -26,7 +26,8 @@ hom_df =
   mutate(resolved = as.numeric(disposition == "Closed by arrest"),
          victim_age = as.numeric(victim_age),
          city_state = str_c(city, ", ", state),
-         victim_race = as.numeric(victim_race != "White"),
+         victim_race = ifelse(victim_race != "White", "non-white", "white"),
+         victim_race = fct_relevel(victim_race, "white"),
          victim_sex = as.numeric(victim_sex == "Male")) %>% 
   filter(city_state != "Dallas, TX" & city_state != "Phoenix, AZ" & city_state != "Kansas City, MO" & city_state != "Tulsa, AL") %>% 
   select(city_state, resolved, victim_age, victim_race, victim_sex)
@@ -59,7 +60,7 @@ glm_func = function(df) {
     mutate(OR = exp(estimate),
          lower_bound = exp(estimate - 1.96*std.error),
          upper_bound = exp(estimate + 1.96*std.error)) %>% 
-    filter(term == "victim_race") %>% 
+    filter(term == "victim_racenon-white") %>% 
     select(OR, lower_bound, upper_bound)
 }
 ```
